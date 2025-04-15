@@ -6,16 +6,17 @@ We can combine the UI management directly into the main script (`main_pygame.py`
 
 ```
 .
-├── config.py           # Configuration (LLM settings, game rules, UI constants?)
-├── llm_player.py       # Defines the LLMPlayer class (AI opponent)
-├── game_manager.py     # Manages game state (scores, history, round), scoring logic, triggers LLM
-├── main_pygame.py      # Main script: Initializes Pygame, UI elements, GameManager, runs the game loop (handles events, drawing, game flow)
-├── .env                # Stores sensitive API keys
-├── requirements.txt    # Dependencies (openai, dotenv, pygame, asyncio)
-├── game_log.txt        # Detailed round history log (optional, can be adapted)
-├── llm_interactions.log # LLM prompt/response log
-├── game_data_*.csv     # CSV data log
-└── README.md           # This README file
+├── logs/                 # Directory for all output files
+│   ├── llm_interactions.log # LLM prompt/response log for the last run
+│   └── game_data_*.csv    # CSV data log for analysis (timestamped)
+├── config.py           # Configuration (LLM settings, game rules, UI constants)
+├── llm_player.py       # Defines the LLMPlayer class (AI opponent logic)
+├── game_manager.py     # Manages game state (scores, history), scoring logic
+├── main_pygame.py      # Main script: Initializes Pygame, UI, GameManager, runs game loop
+├── .env                # Stores sensitive API keys (!!! DO NOT COMMIT THIS FILE !!!)
+├── .gitignore          # Specifies intentionally untracked files (logs/, .env, venv/)
+├── requirements.txt    # Python dependencies
+└── README.md           # This file
 ```
 
 **Key Simplifications:**
@@ -48,8 +49,8 @@ The core game is a variation of common iterated games: players choose a number f
     *   Note: Choosing `N=1` means the opponent cannot get a bonus by choosing `0`, as `0` is not a valid choice.
 4.  **Objective:** Maximize the total score accumulated over `NUM_ROUNDS` (default: 60).
 5.  **Information:**
-    *   The Human sees the current scores, round number, and recent history on the Pygame screen.
-    *   The LLM receives the game rules, its current score, the human's current score, the current round number, and a history of recent rounds before making its choice.
+    *   The Human sees the current scores, round number, and the **result of the last round** on the Pygame screen.
+    *   The LLM receives the game rules, its current score, the human's current score, the current round number, and the **full conversation history** (including all past round results and its own previous choices/analyses) before making its choice.
 
 ## Features
 
@@ -58,22 +59,23 @@ The core game is a variation of common iterated games: players choose a number f
 *   **Configurable LLM Opponent:** Set the LLM model (e.g., GPT-4o, Claude 3 Sonnet) and temperature via `config.py`.
 *   **Configurable Game:** Adjust the number of rounds, available choices, and bonus points in `config.py`.
 *   **Real-time Feedback:** UI updates instantly with scores and round results.
-*   **History Display:** Shows recent round choices and outcomes in the UI.
-*   **Logging:** Saves detailed LLM interactions (`llm_interactions.log`) and structured game data (`game_data_*.csv`). Optional detailed round logging to `game_log.txt`.
+*   **Last Round Display:** Shows the choices and score changes from the previous round in the UI.
+*   **Logging:** Saves detailed LLM prompts/responses (`logs/llm_interactions.log`) and structured game data (`logs/game_data_*.csv`) in a dedicated `logs/` directory.
 
 ## Project Structure
 
 ```
 .
+├── logs/                 # Directory for all output files
+│   ├── llm_interactions.log # LLM prompt/response log for the last run
+│   └── game_data_*.csv    # CSV data log for analysis (timestamped)
 ├── config.py           # Configuration (LLM settings, game rules, UI constants)
 ├── llm_player.py       # Defines the LLMPlayer class (AI opponent logic)
-├── game_manager.py     # Manages game state (scores, history), scoring logic, triggers LLM
+├── game_manager.py     # Manages game state (scores, history), scoring logic
 ├── main_pygame.py      # Main script: Initializes Pygame, UI, GameManager, runs game loop
 ├── .env                # Stores sensitive API keys (!!! DO NOT COMMIT THIS FILE !!!)
+├── .gitignore          # Specifies intentionally untracked files (logs/, .env, venv/)
 ├── requirements.txt    # Python dependencies
-├── game_log.txt        # Optional detailed round history log
-├── llm_interactions.log # LLM prompt/response log
-├── game_data_*.csv     # CSV data log for analysis
 └── README.md           # This file
 ```
 
@@ -108,7 +110,7 @@ The core game is a variation of common iterated games: players choose a number f
     ```bash
     pip install -r requirements.txt
     ```
-    *Note: This will install `pygame`, `openai` (or other LLM client), `python-dotenv`, `asyncio`.*
+    *Note: This will install `pygame`, `openai` (or the specific LLM client), and `python-dotenv`.*
 
 ### Configuration
 
@@ -119,7 +121,7 @@ The core game is a variation of common iterated games: players choose a number f
         # .env file
         LLM_API_KEY="sk-or-v1-..."
         ```
-    *   **Important:** Ensure `.env` is listed in your `.gitignore` file.
+    *   **Important:** Ensure `.env` and `logs/` are listed in your `.gitignore` file.
 
 2.  **Configure LLM, Game, and UI Settings:**
     *   Open `config.py`.
@@ -144,18 +146,17 @@ This will launch the Pygame window where you can play the game.
     *   Current round number.
     *   Human and LLM scores.
     *   Buttons for the human player to choose a number (1-5).
-    *   A display area for recent round history (choices, score changes).
+    *   A display area for the **previous round's result** (choices, score changes).
     *   Status messages (e.g., "Your Turn", "Waiting for LLM...", "Game Over").
-*   **`llm_interactions.log`:** Detailed log of prompts sent to the LLM and responses received.
-*   **`game_data_*.csv`:** CSV file containing structured data for each round (human choice, LLM choice, scores, timestamp) for later analysis.
-*   **`game_log.txt`:** (Optional) Can be configured to log round-by-round details similar to the original LLM vs LLM version.
+*   **`logs/llm_interactions.log`:** Detailed log of system prompt, user prompts (last round results), and LLM responses for the most recent game run.
+*   **`logs/game_data_*.csv`:** CSV file containing structured data for each round (human choice, LLM choice, scores, timestamp) for later analysis. Saved in the `logs/` directory.
 
 ## Customization
 
 *   **Change LLM:** Modify `config.py` and potentially `llm_player.py` if using a different API provider structure.
 *   **Modify Game Rules:** Adjust scoring or choices in `config.py` and update the logic in `game_manager.py`.
 *   **Enhance UI:** Modify drawing functions and event handling in `main_pygame.py` to change appearance or add features.
-*   **Tune LLM Prompt:** Experiment with the system prompt or round prompts in `llm_player.py` to influence the AI's strategy.
+*   **Tune LLM Prompt:** Experiment with the system prompt or the format of the round result prompt in `llm_player.py` to influence the AI's strategy and adherence to the expected output format (1-sentence analysis + "My choice is: [number]").
 
 ## License
 
